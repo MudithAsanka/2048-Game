@@ -5,7 +5,7 @@ const CELL_GAP = 2;
 
 export default class Grid {
     #cells      // private variable
-    
+
   constructor(gridElement) {
     gridElement.style.setProperty("--grid-size", GRID_SIZE);
     gridElement.style.setProperty("--cell-size", `${CELL_SIZE}vmin`); //Convet to vmin
@@ -18,17 +18,38 @@ export default class Grid {
       );
     });
   }
+
+  get #emptyCells() {
+      return this.#cells.filter(cell => cell.tile == null)
+  }
+
+  randomEmptyCell( ){
+    const randomIndex = Math.floor(Math.random() * this.#emptyCells.length)
+    return this.#emptyCells[randomIndex]
+  }
 }
 
 class Cell {
     #cellElement
     #x
     #y
+    #tile
     
   constructor(cellElement, x, y) {
     this.#cellElement = cellElement;
     this.#x = x;
     this.#y = y;
+  }
+
+  get tile() {
+      return this.#tile
+  }
+
+  set tile(value){
+      this.#tile = value
+      if (value == null) return
+      this.#tile.x = this.#x
+      this.#tile.y = this.#y
   }
 }
 
