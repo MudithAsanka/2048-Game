@@ -14,27 +14,30 @@ function setupInput() {
     window.addEventListener("keydown", handleInput, { once: true })      // run once
 }
 
-function handleInput(e) {
+async function handleInput(e) {
     console.log(e.key)
     switch (e.key) {
         case "ArrowUp":
-            moveUp()
+            await moveUp()
             break
         case "ArrowDown":
-            moveDown()
+            await moveDown()
             break
         case "ArrowLeft":
-            moveLeft()
+            await moveLeft()
             break
         case "ArrowRight":
-            moveRight()
+            await moveRight()
             break
         default:
             setupInput()        // not key pressed wait for another
             return
-    }
+    }                           // await until finish to go to next
 
-    // Other code
+    grid.cells.forEach(cell => cell.mergeTiles())
+
+    const newTile = new Tile(gameBoard)
+    grid.randomEmptyCell().tile = newTile       // create new tile at a random cell   
 
     setupInput()
 }
@@ -56,24 +59,29 @@ function moveRight() {
 }
 
 function slideTiles(cells) {
-    cells.forEach(group => {
-        for(let i = 1; i < group.length; i++) {
-            const cell = group[i]
-            if (cell.tile == null) continue
-            let lastValidCell
-            for (let j = i - 1; j >= 0; j--){
-                const moveToCell = group[j]
-                if (!moveToCell.canAccept(cell.tile)) break     // if can't move -> can't move
-                lastValidCell = moveToCell
-            }
-            if (lastValidCell != null) {
-                if(lastValidCell.tile != null){
-                    lastValidCell.mergeTile = cell.tile
-                } else {
-                    lastValidCell.tile = cell.tile
+    return Promise.all(
+        cells.flatMap(group => {
+            const promises = []
+            for(let i = 1; i < group.length; i++) {
+                const cell = group[i]
+                if (cell.tile == null) continue
+                let lastValidCell
+                for (let j = i - 1; j >= 0; j--){
+                    const moveToCell = group[j]
+                    if (!moveToCell.canAccept(cell.tile)) break     // if can't move -> can't move
+                    lastValidCell = moveToCell
                 }
-                cell.tile = null
+                if (lastValidCell != null) {
+                    promises.push(cell.tile.waitForTransition())
+                    if(lastValidCell.tile != null){
+                        lastValidCell.mergeTile = cell.tile
+                    } else {
+                        lastValidCell.tile = cell.tile
+                    }
+                    cell.tile = null
+                }
             }
-        }
-    })
+            return promises
+        })
+    )
 }
